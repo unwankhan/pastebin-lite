@@ -1,41 +1,40 @@
 package com.pastebinlite.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
+
 import java.time.Instant;
 import java.util.Date;
 
 @Document(collection = "pastes")
-//@CompoundIndexes({
-//        @CompoundIndex(name = "user_active_idx", def = "{'userId': 1, 'isActive': 1}"),
-//        @CompoundIndex(name = "created_at_idx", def = "{'createdAt': -1}")
-//})
 public class Paste {
     @Id
     private String id;
 
     private String content;
-    //private String userId;
 
     @Indexed(unique = true)
     private String pasteId; // Short URL ID
 
+    // JSON mapping for incoming/outgoing API fields
+    @JsonProperty("ttl_seconds")
     private Integer ttlSeconds;
-    private Integer maxViews;
-    private Integer viewCount = 0;
 
+    @JsonProperty("max_views")
+    private Integer maxViews;
+
+    private Integer viewCount = 0;
     private Instant createdAt;
 
+    // Indexed for optional TTL (Mongo can drop documents if configured)
     @Indexed(name = "expires_at_idx", expireAfterSeconds = 0)
     private Date expiresAt;
 
     private Instant lastAccessedAt;
-    private boolean isActive = false;
+    private boolean isActive = true;
 
-    // Constructors
     public Paste() {
         this.createdAt = Instant.now();
         this.viewCount = 0;
@@ -50,15 +49,12 @@ public class Paste {
         calculateExpiry();
     }
 
-    // Getters and Setters
+    // Getters / setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
-
-//    public String getUserId() { return userId; }
-//    public void setUserId(String userId) { this.userId = userId; }
 
     public String getPasteId() { return pasteId; }
     public void setPasteId(String pasteId) { this.pasteId = pasteId; }
@@ -76,6 +72,7 @@ public class Paste {
     public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
 
     public void incrementViewCount() {
+        if (this.viewCount == null) this.viewCount = 0;
         this.viewCount++;
         this.lastAccessedAt = Instant.now();
     }
@@ -112,25 +109,28 @@ public class Paste {
 
     public boolean isViewLimitExceeded() {
         if (maxViews == null) return false;
-        return viewCount >= maxViews;
+        return viewCount != null && viewCount >= maxViews;
     }
 
     public boolean isAvailable(Instant now) {
         return isActive && !isExpired(now) && !isViewLimitExceeded();
     }
 
+    @JsonProperty("remaining_views")
     public Integer getRemainingViews() {
         if (maxViews == null) return null;
-        return Math.max(0, maxViews - viewCount);
+        int rem = Math.max(0, maxViews - (viewCount == null ? 0 : viewCount));
+        return rem;
     }
 
-    // Additional helper for JSON serialization
+    // Expose ISO string for expires_at in API responses
+    @JsonProperty("expires_at")
     public String getExpiresAtISO() {
         if (expiresAt == null) return null;
-        return expiresAt.toInstant().toString();
+        return expiresAt.toInstant().toString(); // ISO-8601 UTC
     }
 
-    // Check if paste needs to be deactivated
+    // Check if paste should be deactivated
     public boolean shouldDeactivate(Instant now) {
         return !isActive || isExpired(now) || isViewLimitExceeded();
     }
