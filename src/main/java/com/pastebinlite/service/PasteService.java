@@ -54,6 +54,21 @@ public class PasteService {
         return Optional.of(paste);
     }
 
+    public Optional<Paste> getPasteForViewOnly(String pasteId, Long testNowMs) {
+    Optional<Paste> pasteOpt = pasteRepository.findByPasteId(pasteId);
+    if (pasteOpt.isEmpty()) return Optional.empty();
+
+    Paste paste = pasteOpt.get();
+    Instant now = getNowInstant(testNowMs);
+
+    if (paste.isExpired(now) || paste.isViewLimitExceeded()) {
+        return Optional.empty();
+    }
+
+    return Optional.of(paste);
+}
+
+
     public String getPasteUrl(String pasteId) {
         //return baseUrl + "/p/" + pasteId;
         return "/p/" + pasteId;
