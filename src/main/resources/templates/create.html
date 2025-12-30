@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Paste - Pastebin Lite</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .logo-small {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .back-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .constraints {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .constraint-box {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+
+        .constraint-box:hover {
+            transform: translateY(-3px);
+        }
+
+        .constraint-box h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .constraint-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .constraint-box small {
+            display: block;
+            margin-top: 0.5rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .result-box {
+            background: #e8f6f3;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            border-left: 4px solid #2ecc71;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-box h3 {
+            color: #27ae60;
+            margin-bottom: 1rem;
+        }
+
+        .paste-url {
+            background: white;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            border: 1px dashed #2ecc71;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .error-box {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #c62828;
+            display: none;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .char-count {
+            text-align: right;
+            margin-top: 0.5rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .preview-box {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .constraints {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .back-btn {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 1rem;
+                display: inline-block;
+            }
+        }
+    </style>
+</head>
+<body>
+<a href="/" class="back-btn">← Back to Home</a>
+
+<div class="container">
+    <header>
+        <div class="logo-small">📋</div>
+        <h1>Create New Paste</h1>
+        <p>Share text snippets with optional constraints</p>
+    </header>
+
+    <div class="main-card">
+        <div class="info-box">
+            💡 <strong>Tip:</strong> Your paste will be automatically deleted when it expires or reaches the view limit. No one can access it without the link!
+        </div>
+
+        <div id="errorBox" class="error-box"></div>
+
+        <div class="form-group">
+            <label for="pasteContent">Paste Content *</label>
+            <textarea id="pasteContent" placeholder="Enter your text here... (Maximum 10000 characters)"
+                      maxlength="10000"></textarea>
+            <div class="char-count">
+                <span id="charCount">0</span> / 10000 characters
+            </div>
+            <div class="preview-box" id="previewBox"></div>
+        </div>
+
+        <div class="constraints">
+            <div class="constraint-box">
+                <h3>⏱️ Expiration Time</h3>
+                <p>Set how long the paste should be available</p>
+                <input type="number" id="ttlSeconds" placeholder="Seconds (optional)" min="1">
+                <small>Examples: 300 (5 min), 3600 (1 hour), 86400 (1 day)</small>
+            </div>
+
+            <div class="constraint-box">
+                <h3>👁️ View Limit</h3>
+                <p>Limit how many times it can be viewed</p>
+                <input type="number" id="maxViews" placeholder="Number of views (optional)" min="1">
+                <small>Leave empty for unlimited views</small>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="createBtn">Create Paste</button>
+            <button class="btn btn-secondary" id="clearBtn">Clear Form</button>
+        </div>
+
+        <div id="resultBox" class="result-box">
+            <h3>✅ Paste Created Successfully!</h3>
+            <p>Your paste is ready to share:</p>
+            <div class="paste-url">
+                <a id="pasteUrlLink" target="_blank"></a>
+            </div>
+            <div class="paste-meta">
+                <small id="pasteMeta"></small>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-success" id="copyUrlBtn">Copy URL</button>
+                <button class="btn btn-info" id="viewPasteBtn">View Paste</button>
+                <button class="btn" id="createAnotherBtn">Create Another</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Base URL
+    const BASE_URL = window.location.origin;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+        setupCharCounter();
+        setupPreview();
+    });
+
+    function setupEventListeners() {
+        // Create paste button
+        document.getElementById('createBtn').addEventListener('click', createPaste);
+
+        // Clear form button
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            if (confirm('Clear all form fields?')) {
+                document.getElementById('pasteContent').value = '';
+                document.getElementById('ttlSeconds').value = '';
+                document.getElementById('maxViews').value = '';
+                document.getElementById('charCount').textContent = '0';
+                document.getElementById('previewBox').style.display = 'none';
+                hideError();
+                hideResult();
+            }
+        });
+
+        // Result buttons
+        document.getElementById('copyUrlBtn').addEventListener('click', copyUrl);
+        document.getElementById('viewPasteBtn').addEventListener('click', function() {
+            const url = document.getElementById('pasteUrlLink').href;
+            window.open(url, '_blank');
+        });
+        document.getElementById('createAnotherBtn').addEventListener('click', function() {
+            document.getElementById('pasteContent').value = '';
+            document.getElementById('ttlSeconds').value = '';
+            document.getElementById('maxViews').value = '';
+            document.getElementById('charCount').textContent = '0';
+            document.getElementById('previewBox').style.display = 'none';
+            hideResult();
+            document.getElementById('pasteContent').focus();
+        });
+    }
+
+    function setupCharCounter() {
+        const textarea = document.getElementById('pasteContent');
+        const charCount = document.getElementById('charCount');
+
+        textarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = length;
+
+            if (length > 10000) {
+                charCount.style.color = '#c62828';
+            } else if (length > 9000) {
+                charCount.style.color = '#f57c00';
+            } else {
+                charCount.style.color = '#7f8c8d';
+            }
+        });
+    }
+
+    function setupPreview() {
+        const textarea = document.getElementById('pasteContent');
+        const previewBox = document.getElementById('previewBox');
+
+        textarea.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                previewBox.textContent = this.value.substring(0, 200) +
+                    (this.value.length > 200 ? '...' : '');
+                previewBox.style.display = 'block';
+            } else {
+                previewBox.style.display = 'none';
+            }
+        });
+    }
+
+    function showError(message) {
+        const errorBox = document.getElementById('errorBox');
+        errorBox.textContent = message;
+        errorBox.style.display = 'block';
+        errorBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideError() {
+        document.getElementById('errorBox').style.display = 'none';
+    }
+
+    function showResult(url, ttlSeconds, maxViews) {
+        const resultBox = document.getElementById('resultBox');
+        const pasteUrlLink = document.getElementById('pasteUrlLink');
+        const pasteMeta = document.getElementById('pasteMeta');
+
+        // Set URL
+        pasteUrlLink.textContent = url;
+        pasteUrlLink.href = url;
+
+        // Set metadata
+        let meta = [];
+        if (ttlSeconds) {
+            meta.push(`⏰ Expires in: ${formatTime(ttlSeconds)}`);
+        }
+        if (maxViews) {
+            meta.push(`👁️ Max views: ${maxViews}`);
+        }
+        if (meta.length === 0) {
+            meta.push('⚡ No constraints (unlimited)');
+        }
+
+        pasteMeta.textContent = meta.join(' • ');
+
+        // Show result box
+        resultBox.style.display = 'block';
+        resultBox.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideResult() {
+        document.getElementById('resultBox').style.display = 'none';
+    }
+
+    async function createPaste() {
+        const content = document.getElementById('pasteContent').value;
+        const ttlInput = document.getElementById('ttlSeconds').value;
+        const maxViewsInput = document.getElementById('maxViews').value;
+
+        // Validation
+        if (!content.trim()) {
+            showError('Please enter some content for the paste');
+            return;
+        }
+
+        if (content.length > 10000) {
+            showError('Content is too long (maximum 10000 characters)');
+            return;
+        }
+
+        if (ttlInput && (isNaN(ttlInput) || parseInt(ttlInput) < 1)) {
+            showError('TTL must be a number greater than 0');
+            return;
+        }
+
+        if (maxViewsInput && (isNaN(maxViewsInput) || parseInt(maxViewsInput) < 1)) {
+            showError('Max views must be a number greater than 0');
+            return;
+        }
+
+        // Prepare request body
+        const requestBody = {
+            content: content
+        };
+
+        if (ttlInput && !isNaN(ttlInput) && parseInt(ttlInput) > 0) {
+            requestBody.ttlSeconds = parseInt(ttlInput);
+        }
+
+        if (maxViewsInput && !isNaN(maxViewsInput) && parseInt(maxViewsInput) > 0) {
+            requestBody.maxViews = parseInt(maxViewsInput);
+        }
+
+        // Prepare headers
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        // Show loading
+        const createBtn = document.getElementById('createBtn');
+        const originalText = createBtn.textContent;
+        createBtn.textContent = 'Creating...';
+        createBtn.disabled = true;
+        hideError();
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/pastes`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                // Show success
+                showResult(data.url, ttlInput, maxViewsInput);
+            } else {
+                const error = await response.json();
+                showError(error.error || 'Failed to create paste');
+            }
+        } catch (error) {
+            showError('Network error. Please check your connection and try again.');
+        } finally {
+            // Restore button
+            createBtn.textContent = originalText;
+            createBtn.disabled = false;
+        }
+    }
+
+    function copyUrl() {
+        const url = document.getElementById('pasteUrlLink').href;
+        navigator.clipboard.writeText(url).then(() => {
+            const copyBtn = document.getElementById('copyUrlBtn');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✓ Copied!';
+            copyBtn.style.background = '#27ae60';
+
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.style.background = '';
+            }, 2000);
+        });
+    }
+
+    function formatTime(seconds) {
+        if (seconds < 60) return `${seconds} seconds`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours`;
+        return `${Math.floor(seconds / 86400)} days`;
+    }
+</script>
+</body>
+</html>

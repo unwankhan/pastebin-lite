@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paste - Pastebin Lite</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem 0;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-small {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .paste-container {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .paste-header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .paste-id {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            color: #2c3e50;
+            border: 1px solid #e0e0e0;
+        }
+
+        .paste-meta {
+            display: flex;
+            gap: 2rem;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .paste-content {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 2rem;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.8;
+            font-size: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+        }
+
+        .badge-expired {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #c62828;
+        }
+
+        .badge-active {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #2e7d32;
+        }
+
+        .badge-limit {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #f57c00;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .copy-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .raw-btn {
+            background: none;
+            border: 1px solid #3498db;
+            color: #3498db;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .raw-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .expired-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid #c62828;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .paste-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .paste-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .content-actions {
+                flex-direction: column;
+            }
+
+            .nav-buttons {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 1rem;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="nav-buttons">
+    <a href="/" class="btn">🏠 Home</a>
+    <a href="/create" class="btn">➕ Create</a>
+</div>
+
+<div class="container">
+    <header>
+        <div class="logo-small">📋</div>
+        <h1>Pastebin Lite</h1>
+        <p>View and share text snippets</p>
+    </header>
+
+    <div class="paste-container">
+        <div class="paste-header">
+            <div>
+                <h2>Paste: <span class="paste-id" th:text="${pasteId}"></span></h2>
+                <div class="paste-meta">
+                    <div class="meta-item">
+                        📅 Created: <span th:text="${createdAt}"></span>
+                    </div>
+                    <div class="meta-item">
+                        👁️ Views: <span th:text="${viewCount}"></span>
+                        <span th:if="${maxViews != null}">
+                                / <span th:text="${maxViews}"></span>
+                            </span>
+                    </div>
+                    <div class="meta-item">
+                        ⏰ Expires: <span th:text="${expiresAt}"></span>
+                        <span th:if="${timeRemaining != 'Never'}">
+                                (<span th:text="${timeRemaining}"></span>)
+                            </span>
+                    </div>
+                    <div class="meta-item" th:if="${remainingViews != null}">
+                        🔢 Remaining: <span th:text="${remainingViews}"></span> views
+                    </div>
+                </div>
+            </div>
+            <div th:if="${status == 'expired'}" class="status-badge badge-expired">
+                ⏰ Expired
+            </div>
+            <div th:if="${status == 'limit_reached'}" class="status-badge badge-limit">
+                ⛔ Limit Reached
+            </div>
+            <div th:if="${status == 'active'}" class="status-badge badge-active">
+                ✅ Active
+            </div>
+        </div>
+
+        <!-- Show message if expired or limit reached -->
+        <div th:if="${status == 'expired'}" class="expired-message">
+            ⚠️ This paste has expired and is no longer available.
+        </div>
+
+        <div th:if="${status == 'limit_reached'}" class="expired-message">
+            ⚠️ This paste has reached its view limit and is no longer available.
+        </div>
+
+        <div th:if="${status == 'active'}">
+            <div class="content-actions">
+                <button class="copy-btn" id="copyContentBtn">📋 Copy Content</button>
+                <a th:href="@{/api/pastes/{id}(id=${pasteId})}" class="raw-btn" target="_blank">🔗 View Raw (JSON)</a>
+            </div>
+
+            <div class="paste-content" id="pasteContent" th:text="${content}"></div>
+        </div>
+
+        <div class="actions">
+            <a href="/create" class="btn btn-primary">Create New Paste</a>
+            <button class="btn btn-secondary" id="shareBtn">Share This Paste</button>
+        </div>
+    </div>
+</div>
+
+<script th:if="${status == 'active'}">
+    // Get paste content
+    const pasteContent = document.getElementById('pasteContent').textContent;
+
+    // Copy content button
+    document.getElementById('copyContentBtn').addEventListener('click', function() {
+        navigator.clipboard.writeText(pasteContent).then(() => {
+            const btn = this;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            btn.style.background = '#27ae60';
+
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        });
+    });
+
+    // Share button
+    document.getElementById('shareBtn').addEventListener('click', function() {
+        const url = window.location.href;
+
+        if (navigator.share) {
+            navigator.share({
+                title: 'Pastebin Lite Paste',
+                text: 'Check out this paste: ' + pasteContent.substring(0, 100) + '...',
+                url: url
+            });
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = this;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Link Copied!';
+                btn.style.background = '#27ae60';
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            });
+        }
+    });
+</script>
+</body>
+</html>

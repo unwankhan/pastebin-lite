@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastebin Lite - Share Text Instantly</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            color: white;
+        }
+
+        .logo {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+
+        header p {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            margin-top: 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero h2 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero p {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 2.5rem 0 3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Features Section */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .feature {
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #4CAF50;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .feature h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature p {
+            color: #5a6c7d;
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 4rem 0;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-text {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* How It Works Section */
+        .how-it-works {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 3rem;
+            margin: 3rem 0;
+            text-align: center;
+        }
+
+        .how-it-works h2 {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            font-size: 2.2rem;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .step {
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            line-height: 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        footer p {
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.5rem;
+            }
+
+            header p {
+                font-size: 1.2rem;
+            }
+
+            .logo {
+                font-size: 4rem;
+            }
+
+            .btn {
+                min-width: 100%;
+                padding: 14px 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .main-content {
+                padding: 2rem;
+            }
+
+            .features, .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stat-item {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            header p {
+                font-size: 1.1rem;
+            }
+
+            .logo {
+                font-size: 3.5rem;
+            }
+
+            .hero h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header Section -->
+    <header>
+        <div class="logo">📋</div>
+        <h1>Pastebin Lite</h1>
+        <p>Create and share text snippets instantly - No registration required! Perfect for code sharing, notes, and quick collaboration.</p>
+
+        <div class="buttons">
+            <a href="/create" class="btn btn-primary">
+                ✨ Create New Paste
+            </a>
+            <button class="btn btn-secondary" id="learnMoreBtn">
+                📚 How It Works
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h2>Share Text Instantly, Anywhere</h2>
+            <p>Pastebin Lite is a simple, fast, and secure way to share text online. Whether you're sharing code snippets, configuration files, or just plain text, we've got you covered.</p>
+
+            <div class="buttons">
+                <a href="/create" class="btn btn-primary">
+                    📝 Start Creating
+                </a>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features">
+            <div class="feature">
+                <h3>🔒 Secure & Private</h3>
+                <p>Your pastes are protected with unique URLs and automatically deleted when constraints are met. No one can access them without the exact link.</p>
+            </div>
+
+            <div class="feature">
+                <h3>⏱️ Auto Expiry</h3>
+                <p>Set custom expiration times. Your paste automatically becomes inaccessible after the specified duration, keeping your data secure.</p>
+            </div>
+
+            <div class="feature">
+                <h3>👁️ View Limits</h3>
+                <p>Control how many times your paste can be viewed. Perfect for sharing sensitive information like passwords or one-time codes.</p>
+            </div>
+
+            <div class="feature">
+                <h3>🚀 Instant Sharing</h3>
+                <p>Get a shareable URL in seconds. No registration, no login, no hassle. Just paste, share, and done!</p>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number">∞</span>
+                <span class="stat-text">Completely Free</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">10K</span>
+                <span class="stat-text">Character Limit</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">⚡</span>
+                <span class="stat-text">Instant Setup</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">🔐</span>
+                <span class="stat-text">Secure & Private</span>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="how-it-works" id="howItWorks">
+            <h2>How It Works</h2>
+            <p>Sharing text has never been easier. Follow these simple steps:</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Create Your Paste</h3>
+                    <p>Enter your text in our simple editor. Add optional constraints like expiration time or view limits.</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Get Unique URL</h3>
+                    <p>Instantly receive a unique link to your paste. This link is your key to access and share the content.</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Share & Collaborate</h3>
+                    <p>Share the link with anyone. They can view the paste without needing to sign up or log in.</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Automatic Cleanup</h3>
+                    <p>Your paste automatically disappears when it expires or reaches the view limit. No manual cleanup needed!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Call to Action -->
+        <div class="hero" style="margin-top: 3rem;">
+            <h2>Ready to Start Sharing?</h2>
+            <p>Join thousands of users who trust Pastebin Lite for quick, secure text sharing. No strings attached!</p>
+
+            <div class="buttons">
+                <a href="/create" class="btn btn-primary" style="min-width: 250px; padding: 18px 40px; font-size: 1.2rem;">
+                    🚀 Create Your First Paste
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2024 Pastebin Lite | Made with ❤️ for developers and content creators</p>
+        <p style="font-size: 0.9rem; opacity: 0.8;">Simple, Fast, Secure Text Sharing</p>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scroll to How It Works section
+        const learnMoreBtn = document.getElementById('learnMoreBtn');
+        if (learnMoreBtn) {
+            learnMoreBtn.addEventListener('click', function() {
+                document.getElementById('howItWorks').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            });
+        }
+
+        // Add hover effect to buttons
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.02)';
+            });
+
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Add animation to features on scroll
+        const observerOptions = {
+            threshold: 0.2,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe features
+        const features = document.querySelectorAll('.feature, .step');
+        features.forEach((feature, index) => {
+            feature.style.opacity = '0';
+            feature.style.transform = 'translateY(20px)';
+            feature.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            feature.style.transitionDelay = (index * 0.1) + 's';
+            observer.observe(feature);
+        });
+
+        // Add click animation to buttons
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 200);
+            });
+        });
+    });
+</script>
+</body>
+</html>
