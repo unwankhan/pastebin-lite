@@ -70,9 +70,18 @@ public class PasteService {
 
 
     public String getPasteUrl(String pasteId) {
-        //return baseUrl + "/p/" + pasteId;
-        return "/p/" + pasteId;
+    if (baseUrl != null && !baseUrl.isBlank()) {
+        // ensure no double slash
+        if (baseUrl.endsWith("/")) {
+            return baseUrl + "p/" + pasteId;
+        } else {
+            return baseUrl + "/p/" + pasteId;
+        }
     }
+    // fallback (shouldn't happen in production)
+    return "/p/" + pasteId;
+}
+
 
     private String generatePasteId() {
         String pasteId;
