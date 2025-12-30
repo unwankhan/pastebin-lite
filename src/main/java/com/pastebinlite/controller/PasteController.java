@@ -73,7 +73,7 @@ public class PasteController {
             @PathVariable String id,
             @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
 
-        Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
+        Optional<Paste> pasteOpt = pasteService.getPasteForViewOnly(id, testNowMs);
 
         if (pasteOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
