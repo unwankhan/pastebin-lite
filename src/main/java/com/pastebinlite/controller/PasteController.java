@@ -68,30 +68,32 @@ public class PasteController {
     }
 
     // Get paste endpoint (API) - returns JSON
-    @GetMapping("/pastes/{id}")
-    public ResponseEntity<?> getPasteApi(
-            @PathVariable String id,
-            @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
+@GetMapping("/pastes/{id}")
+public ResponseEntity<?> getPasteApi(
+        @PathVariable String id,
+        @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
 
-        Optional<Paste> pasteOpt = pasteService.getPasteForViewOnly(id, testNowMs);
+    // This API should increment the view count (counts as a view)
+    Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
 
-        if (pasteOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Paste not found or unavailable"));
-        }
-
-        Paste paste = pasteOpt.get();
-        Map<String, Object> response = new HashMap<>();
-        response.put("content", paste.getContent());
-        response.put("remaining_views", paste.getRemainingViews());
-        response.put("expires_at", paste.getExpiresAt() != null ?
-                paste.getExpiresAt().toString() : null);
-        response.put("created_at", paste.getCreatedAt().toString());
-        response.put("max_views", paste.getMaxViews());
-        response.put("view_count", paste.getViewCount());
-
-        return ResponseEntity.ok(response);
+    if (pasteOpt.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Paste not found or unavailable"));
     }
+
+    Paste paste = pasteOpt.get();
+    Map<String, Object> response = new HashMap<>();
+    response.put("content", paste.getContent());
+    response.put("remaining_views", paste.getRemainingViews());
+    response.put("expires_at", paste.getExpiresAt() != null ?
+            paste.getExpiresAt().toString() : null);
+    response.put("created_at", paste.getCreatedAt().toString());
+    response.put("max_views", paste.getMaxViews());
+    response.put("view_count", paste.getViewCount());
+
+    return ResponseEntity.ok(response);
+}
+
 
     @Controller
     public class ViewController {
@@ -118,7 +120,7 @@ public class PasteController {
                 @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs,
                 Model model) {
 
-            Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
+            Optional<Paste> pasteOpt = pasteService.getPasteForViewOnly(id, testNowMs);
             //System.out.println("output result "+pasteOpt.isPresent());
             if (pasteOpt.isEmpty()) {
                 //System.out.println("Paste not found or unavailable");
