@@ -55,7 +55,8 @@ public class PasteService {
     }
 
     public String getPasteUrl(String pasteId) {
-        return baseUrl + "/p/" + pasteId;
+        //return baseUrl + "/p/" + pasteId;
+        return "/p/" + pasteId;
     }
 
     private String generatePasteId() {
