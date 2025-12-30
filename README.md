@@ -1,106 +1,262 @@
-# Pastebin-Lite
+# Pastebin Lite
 
-A simple Pastebin-like application built with Spring Boot that allows users to create text pastes with optional time-based expiry and view limits, and share them via unique URLs.
-A small Pastebin-like application that allows users to create text pastes and share a link to view them.
-Pastes can optionally expire based on time-to-live (TTL) or a maximum view count.
+A lightweight pastebin-like application built with Java Spring Boot and MongoDB. Users can create text pastes with optional constraints (expiration time and view limits) and share them via unique URLs.
 
-## How to Run Locally
-## Deployed URL
+## Features
 
-### Prerequisites:
+- 📝 Create text pastes with optional constraints
+- ⏱️ Set expiration time (TTL) for automatic deletion
+- 👁️ Limit maximum views for pastes
+- 🔗 Generate unique, shareable URLs
+- 🛡️ Secure content rendering (no script execution)
+- 📊 View paste metadata (remaining views, expiration time)
+- 🧪 Deterministic time testing support for automated tests
+
+## Tech Stack
+
+- **Backend**: Java 17, Spring Boot 2.7+
+- **Frontend**: Thymeleaf templates, HTML5, CSS3, JavaScript
+- **Database**: MongoDB (with TTL indexes for auto-expiry)
+- **Build Tool**: Maven
+- **Containerization**: Docker & Docker Compose
+- **Deployment**: Railway.app (or any cloud platform)
+
+## Prerequisites
+
 - Java 17 or higher
 - Maven 3.8+
-- MongoDB (local instance or cloud)
-https://pastebin-lite-production.up.railway.app
+- MongoDB 6.0+ (or Docker)
+- (Optional) Docker & Docker Compose
 
-### Steps:
-1. **Clone the repository:**
+## Running Locally
+
+### Method 1: Using Docker Compose (Recommended)
+
+1. **Clone the repository**
    ```bash
-   git clone [your-repo-url]
+   git clone <repository-url>
    cd pastebin-lite
    ```
 
-2. **Configure MongoDB:**
-   - Option A: Use local MongoDB
-     ```bash
-     docker run -d -p 27017:27017 --name mongodb mongo:6.0
-     ```
-   - Option B: Update the connection string in `src/main/resources/application.properties` to your MongoDB URI
-
-3. **Build and run:**
+2. **Start the application with Docker Compose**
    ```bash
+   docker-compose up
+   ```
+
+3. **Access the application**
+    - Application: http://localhost:8080
+    - Health check: http://localhost:8080/api/healthz
+
+### Method 2: Manual Setup
+
+1. **Start MongoDB**
+   ```bash
+   # Option A: Using Docker
+   docker run -d -p 27017:27017 --name pastebin-mongo mongo:6.0
+
+   # Option B: Install MongoDB locally
+   # Follow official MongoDB installation guide
+   ```
+
+2. **Set environment variables**
+   ```bash
+   export MONGODB_URI=mongodb://localhost:27017/pastebin_lite
+   export APP_BASE_URL=http://localhost:8080
+   export TEST_MODE=0
+   ```
+
+3. **Build and run the application**
+   ```bash
+   # Build the project
    mvn clean package
+
+   # Run the application
    java -jar target/pastebin-lite-1.0.0.jar
    ```
-## How to run the app locally
 
-4. **Access the application:**
-   - Open `http://localhost:8080` in your browser
-   - Health check: `http://localhost:8080/api/healthz`
-### Prerequisites
-- Java 17
-- Maven
-- MongoDB (local or MongoDB Atlas)
+4. **Access the application**
+    - Open http://localhost:8080 in your browser
+
+### Method 3: Using Maven directly
+
+```bash
+# Run with Maven
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.data.mongodb.uri=mongodb://localhost:27017/pastebin_lite --app.base-url=http://localhost:8080"
+```
+
+## API Endpoints
+
+### Health Check
+```
+GET /api/healthz
+```
+Returns application health status.
+
+### Create a Paste
+```
+POST /api/pastes
+```
+**Request Body:**
+```json
+{
+  "content": "Your text here",
+  "ttl_seconds": 300,
+  "max_views": 5
+}
+```
+
+**Response:**
+```json
+{
+  "id": "abc123de",
+  "url": "http://localhost:8080/p/abc123de"
+}
+```
+
+### Retrieve a Paste (API)
+```
+GET /api/pastes/{id}
+```
+Returns JSON with paste content and metadata.
+
+### View a Paste (HTML)
+```
+GET /p/{id}
+```
+Returns HTML page with the paste content.
 
 ## Persistence Layer
-### Steps
 
-This application uses **MongoDB** as its persistence layer. MongoDB was chosen because:
-1. Clone the repository
-   git clone <your-github-repo-url>
-   cd pastebin-lite
+This application uses **MongoDB** as the persistence layer with the following configuration:
 
-1. **TTL Index Support**: Native support for automatic document expiry based on time, which aligns perfectly with our time-based expiry requirement
-2. **Flexible Schema**: Easy to store paste data with optional fields (ttl_seconds, max_views)
-3. **Cloud-Ready**: Works well with serverless deployments and cloud platforms like Railway
-4. **Scalability**: Handles concurrent paste creation and retrieval efficiently
-2. Configure application properties
-   Update the following properties in `src/main/resources/application.properties`:
+### Database Schema
+- **Collection**: `pastes`
+- **Indexes**:
+    - Unique index on `pasteId` for fast lookups
+    - TTL index on `expiresAt` for automatic document expiration
+    - Compound indexes for efficient querying
 
-## Important Design Decisions
-   spring.data.mongodb.uri=<your-mongodb-connection-string>
-   app.base-url=http://localhost:8080
+### Key Features
+- **Automatic Expiry**: MongoDB TTL indexes automatically delete expired documents
+- **Atomic Operations**: Uses MongoDB's findAndModify for race-condition-free view counting
+- **Scalability**: MongoDB's document model fits the paste structure perfectly
+- **Persistence**: Survives server restarts and works across serverless environments
 
-1. **Dual Interface**: Implemented both REST API (`/api/pastes`) for programmatic access and HTML views (`/p/:id`) for user-friendly sharing
-2. **Constraint Handling**: Pastes become unavailable when EITHER time-based expiry OR view limit is triggered, whichever comes first
-3. **Test Mode Support**: Added `TEST_MODE=1` environment variable and `x-test-now-ms` header for deterministic expiry testing as required by the assignment
-4. **Thread-Safe View Counting**: View count increments are handled atomically to prevent race conditions under concurrent load
-5. **Clean Architecture**: Separated concerns with Controller-Service-Repository pattern for maintainability
-3. Build the application
-   mvn clean package
+### MongoDB Configuration
+```properties
+spring.data.mongodb.uri=${MONGODB_URI}
+spring.data.mongodb.database=pastebin_lite
+spring.data.mongodb.auto-index-creation=true
+```
 
-## Railway Deployment Notes
-4. Run the application
-   mvn spring-boot:run
+The TTL index is configured to automatically remove pastes when their `expiresAt` time is reached, ensuring no manual cleanup is required.
 
-To deploy on Railway:
-5. The application will be available at
-   http://localhost:8080
+## Environment Variables
 
-1. **Set Environment Variables:**
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | 8080 |
+| `MONGODB_URI` | MongoDB connection string | Required |
+| `APP_BASE_URL` | Base URL for generated paste links | http://localhost:8080 |
+| `TEST_MODE` | Enable deterministic time for testing | 0 |
+| `APP_PASTE_ID_LENGTH` | Length of generated paste IDs | 8 |
+| `APP_DEFAULT_TTL_SECONDS` | Default TTL if not specified | 604800 (7 days) |
+
+## Testing
+
+### Automated Tests
+The application supports deterministic time testing via the `x-test-now-ms` header when `TEST_MODE=1`.
+
+### Run Tests
+```bash
+# Run all tests
+mvn test
+
+# Run with specific profile
+mvn test -Dspring.profiles.active=test
+```
+
+### Test Examples
+```bash
+# Create a paste with TTL
+curl -X POST http://localhost:8080/api/pastes \
+  -H "Content-Type: application/json" \
+  -d '{"content":"test", "ttl_seconds":60, "max_views":5}'
+
+# Retrieve with test time header
+curl -H "x-test-now-ms: 1672531200000" \
+  http://localhost:8080/api/pastes/abc123de
+```
+
+## Deployment
+
+The application is deployed on Railway.app at:
+**Live URL**: https://pastebin-lite-production.up.railway.app/
+
+### Deployment Instructions
+
+1. **Push to Railway**
+   ```bash
+   # Connect your repository
+   railway link
+   
+   # Deploy
+   railway up
    ```
-   SPRING_DATA_MONGODB_URI=mongodb://[your-mongodb-connection-string]
-   APP_BASE_URL=https://your-app.vercel.app
-   ```
-## Persistence layer
 
-2. **Build Command:**
-   ```
-   mvn clean package -DskipTests
-   ```
-This application uses MongoDB as the persistence layer.
-MongoDB Atlas is used in production to ensure data persistence across requests and deployments.
+2. **Set environment variables on Railway**
+    - `MONGODB_URI`: Your MongoDB connection string
+    - `APP_BASE_URL`: Your Railway app URL
+    - `PORT`: Set by Railway automatically
 
-3. **Start Command:**
-   ```
-   java -jar target/pastebin-lite-1.0.0.jar
-   ```
-## Important design decisions
+3. **Access your deployed application**
+    - Your app will be available at `https://<your-project>.up.railway.app`
 
-4. **Health Check Endpoint:** Railway will use `/api/healthz` for health checks
-- A persistent database (MongoDB) is used instead of in-memory storage to ensure compatibility with automated tests.
-- API-based paste fetches increment the view count, while HTML page views do not.
-- Time-based expiry (TTL) is enforced using stored expiry timestamps.
-- View-count limits are strictly enforced, returning HTTP 404 once exceeded.
-- Deterministic time testing is supported via the `x-test-now-ms` request header when test mode is enabled.
-- All unavailable pastes consistently return HTTP 404 responses.
+## Project Structure
+
+```
+pastebin-lite/
+├── src/main/java/com/pastebinlite/
+│   ├── controller/     # REST and view controllers
+│   ├── model/          # Data models (Paste entity)
+│   ├── repository/     # MongoDB repository interfaces
+│   ├── service/        # Business logic
+│   └── PastebinLiteApplication.java
+├── src/main/resources/
+│   ├── templates/      # Thymeleaf HTML templates
+│   └── application.properties
+├── Dockerfile          # Docker configuration
+├── docker-compose.yml  # Local development setup
+├── pom.xml            # Maven dependencies
+└── README.md          # This file
+```
+
+## Development
+
+### Code Style
+- Follow Java conventions
+- Use meaningful variable names
+- Add comments for complex logic
+- Keep methods focused and small
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is created for assignment purposes. Feel free to use it as a reference or starting point for your own projects.
+
+## Support
+
+For questions or issues:
+1. Check the deployed application: https://pastebin-lite-production.up.railway.app/
+2. Review the API documentation above
+3. Check the application logs for errors
+
+---
+
+**Note**: This is a lightweight implementation for educational purposes. For production use, consider adding authentication, rate limiting, and additional security measures.

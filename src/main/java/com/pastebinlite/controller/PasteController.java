@@ -1,8 +1,10 @@
 package com.pastebinlite.controller;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.pastebinlite.model.Paste;
 import com.pastebinlite.service.PasteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -23,12 +25,19 @@ public class PasteController {
     @Autowired
     private PasteService pasteService;
 
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     // Health check endpoint
     @GetMapping("/healthz")
     public ResponseEntity<Map<String, Object>> healthCheck() {
         Map<String, Object> response = new HashMap<>();
-        response.put("ok", true);
-        response.put("timestamp", Instant.now().toString());
+        try {
+            mongoTemplate.executeCommand("{ ping: 1 }");
+            response.put("ok", true);
+        } catch (Exception e) {
+            response.put("ok", false);
+        }
         return ResponseEntity.ok(response);
     }
 
@@ -68,137 +77,62 @@ public class PasteController {
     }
 
     // Get paste endpoint (API) - returns JSON
-@GetMapping("/pastes/{id}")
-public ResponseEntity<?> getPasteApi(
-        @PathVariable String id,
-        @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
+    @GetMapping("/pastes/{id}")
+    public ResponseEntity<?> getPasteApi(
+            @PathVariable String id,
+            @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
 
-    // This API should increment the view count (counts as a view)
-    Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
+        // This API should increment the view count (counts as a view)
+        Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
 
-    if (pasteOpt.isEmpty()) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", "Paste not found or unavailable"));
+        if (pasteOpt.isEmpty()) {
+            // Try to get the paste without incrementing to check why it's unavailable
+            Optional<Paste> pasteForCheck = pasteService.getPasteForViewOnly(id, testNowMs);
+
+            if (pasteForCheck.isEmpty()) {
+                // Paste doesn't exist at all
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Paste not found"));
+            }
+
+            Paste paste = pasteForCheck.get();
+            Instant now = pasteService.getNowInstant(testNowMs);
+
+            if (paste.getExpiresAt() != null && now.isAfter(paste.getExpiresAt().toInstant())) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Paste expired"));
+            }
+
+            if (paste.getMaxViews() != null && paste.getViewCount() >= paste.getMaxViews()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Paste view limit reached"));
+            }
+
+            // Generic error if none of the above
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Paste unavailable"));
+        }
+
+        Paste paste = pasteOpt.get();
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", paste.getContent());
+        response.put("remaining_views", paste.getRemainingViews());
+        response.put("expires_at", paste.getExpiresAtISO());
+
+        return ResponseEntity.ok(response);
     }
 
-    Paste paste = pasteOpt.get();
-    Map<String, Object> response = new HashMap<>();
-    response.put("content", paste.getContent());
-    response.put("remaining_views", paste.getRemainingViews());
-    response.put("expires_at", paste.getExpiresAt() != null ?
-            paste.getExpiresAt().toString() : null);
-    response.put("created_at", paste.getCreatedAt().toString());
-    response.put("max_views", paste.getMaxViews());
-    response.put("view_count", paste.getViewCount());
-
-    return ResponseEntity.ok(response);
-}
-
-
-    @Controller
-    public class ViewController {
-
-        @Autowired
-        private PasteService pasteService;
-
-        // Home page - simple redirect to template
-        @GetMapping("/")
-        public String home() {
-            return "index";  // This will look for src/main/resources/templates/index.html
-        }
-
-        // Create page - simple redirect to template
-        @GetMapping("/create")
-        public String create() {
-            return "create";  // This will look for src/main/resources/templates/create.html
-        }
-
-        // View paste - This needs to process the paste data
-        @GetMapping("/p/{id}")
-        public String viewPasteHtml(
-                @PathVariable String id,
-                @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs,
-                Model model) {
-
-            Optional<Paste> pasteOpt = pasteService.getPasteForViewOnly(id, testNowMs);
-            //System.out.println("output result "+pasteOpt.isPresent());
-            if (pasteOpt.isEmpty()) {
-                //System.out.println("Paste not found or unavailable");
-                model.addAttribute("errorMessage", "This paste is not available. It may have expired, been deleted, or reached its view limit.");
-                return "error";
-            }
-
-            Paste paste = pasteOpt.get();
-
-            // Format dates
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                    .withZone(ZoneId.systemDefault());
-
-            // Calculate if expired
-            Instant now = testNowMs != null ? Instant.ofEpochMilli(testNowMs) : Instant.now();
-            boolean isExpired = paste.getExpiresAt() != null && now.isAfter(paste.getExpiresAt().toInstant());
-            boolean isLimitReached = paste.getMaxViews() != null && paste.getViewCount() >= paste.getMaxViews();
-
-            // Add attributes to model
-            model.addAttribute("pasteId", paste.getPasteId());
-            model.addAttribute("content", paste.getContent());
-            model.addAttribute("createdAt", formatter.format(paste.getCreatedAt()));
-            model.addAttribute("viewCount", paste.getViewCount());
-            model.addAttribute("maxViews", paste.getMaxViews());
-            model.addAttribute("remainingViews", paste.getRemainingViews());
-
-            if (paste.getExpiresAt() != null) {
-                model.addAttribute("expiresAt", formatter.format(paste.getExpiresAt().toInstant()));
-
-                // Calculate time remaining
-                long secondsRemaining = paste.getExpiresAt().getSeconds() - now.getEpochSecond();
-                if (secondsRemaining <= 0) {
-                    model.addAttribute("timeRemaining", "Expired");
-                } else {
-                    model.addAttribute("timeRemaining", formatTimeRemaining(secondsRemaining));
-                }
-            } else {
-                model.addAttribute("expiresAt", "Never");
-                model.addAttribute("timeRemaining", "Never");
-            }
-
-            // Determine status
-            if (isExpired) {
-                model.addAttribute("status", "expired");
-            } else if (isLimitReached) {
-                model.addAttribute("status", "limit_reached");
-            } else {
-                model.addAttribute("status", "active");
-            }
-
-            return "view";
-        }
-
-        // Error page
-        @GetMapping("/error")
-        public String errorPage(@RequestParam(value = "message", required = false) String message, Model model) {
-            model.addAttribute("errorMessage", message != null ? message : "An error occurred");
-            return "error";
-        }
-
-        private String formatTimeRemaining(long seconds) {
-            if (seconds < 60) return seconds + " seconds";
-            if (seconds < 3600) return (seconds / 60) + " minutes";
-            if (seconds < 86400) return (seconds / 3600) + " hours";
-            return (seconds / 86400) + " days";
-        }
-    }
 
     // Request DTO
     static class CreatePasteRequest {
         public String content;
+
+        @JsonProperty("ttl_seconds")
         public Integer ttlSeconds;
+
+        @JsonProperty("max_views")
         public Integer maxViews;
 
         public CreatePasteRequest() {}
-
-        public String getAllContent() {
-            return content+ " "+ ttlSeconds+ " "+ maxViews;
-        }
     }
 }

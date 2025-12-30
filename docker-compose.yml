@@ -28,7 +28,7 @@ services:
     environment:
       - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
       - APP_BASE_URL=${APP_BASE_URL:http://localhost:8080}
-      - TEST_MODE_ENABLED=false
+      - TEST_MODE=${TEST_MODE:0}
     depends_on:
       mongodb:
         condition: service_healthy

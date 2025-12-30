@@ -524,11 +524,10 @@
         };
 
         if (ttlInput && !isNaN(ttlInput) && parseInt(ttlInput) > 0) {
-            requestBody.ttlSeconds = parseInt(ttlInput);
+            requestBody.ttl_seconds = parseInt(ttlInput);
         }
-
         if (maxViewsInput && !isNaN(maxViewsInput) && parseInt(maxViewsInput) > 0) {
-            requestBody.maxViews = parseInt(maxViewsInput);
+            requestBody.max_views = parseInt(maxViewsInput);
         }
 
         // Prepare headers
