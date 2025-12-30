@@ -463,7 +463,11 @@
 
         // Set URL
         pasteUrlLink.textContent = url;
-        pasteUrlLink.href = url;
+
+        pasteUrlLink.href = url.startsWith("http")
+            ? url
+            : `${window.location.origin}${url}`;
+
 
         // Set metadata
         let meta = [];
