@@ -29,6 +29,7 @@ services:
       - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
       - APP_BASE_URL=${APP_BASE_URL:http://localhost:8080}
       - TEST_MODE=${TEST_MODE:0}
+      - APP_PASTE_ID_LENGTH=${APP_PASTE_ID_LENGTH:8}
     depends_on:
       mongodb:
         condition: service_healthy

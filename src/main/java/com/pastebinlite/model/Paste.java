@@ -9,16 +9,11 @@ import java.time.Instant;
 import java.util.Date;
 
 @Document(collection = "pastes")
-//@CompoundIndexes({
-//        @CompoundIndex(name = "user_active_idx", def = "{'userId': 1, 'isActive': 1}"),
-//        @CompoundIndex(name = "created_at_idx", def = "{'createdAt': -1}")
-//})
 public class Paste {
     @Id
     private String id;
 
     private String content;
-    //private String userId;
 
     @Indexed(unique = true)
     private String pasteId; // Short URL ID
@@ -32,8 +27,7 @@ public class Paste {
     @Indexed(name = "expires_at_idx", expireAfterSeconds = 0)
     private Date expiresAt;
 
-    private Instant lastAccessedAt;
-    private boolean isActive = false;
+    private boolean isActive;
 
     // Constructors
     public Paste() {
@@ -50,49 +44,24 @@ public class Paste {
         calculateExpiry();
     }
 
-    // Getters and Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
     public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
 
-//    public String getUserId() { return userId; }
-//    public void setUserId(String userId) { this.userId = userId; }
 
     public String getPasteId() { return pasteId; }
     public void setPasteId(String pasteId) { this.pasteId = pasteId; }
 
-    public Integer getTtlSeconds() { return ttlSeconds; }
-    public void setTtlSeconds(Integer ttlSeconds) {
-        this.ttlSeconds = ttlSeconds;
-        calculateExpiry();
-    }
+
 
     public Integer getMaxViews() { return maxViews; }
-    public void setMaxViews(Integer maxViews) { this.maxViews = maxViews; }
 
     public Integer getViewCount() { return viewCount; }
-    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
 
-    public void incrementViewCount() {
-        this.viewCount++;
-        this.lastAccessedAt = Instant.now();
-    }
 
     public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-        calculateExpiry();
-    }
+    public void setCreatedAt(Instant createdAt) { this.createdAt=createdAt;}
 
     public Date getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Date expiresAt) { this.expiresAt = expiresAt; }
 
-    public Instant getLastAccessedAt() { return lastAccessedAt; }
-    public void setLastAccessedAt(Instant lastAccessedAt) { this.lastAccessedAt = lastAccessedAt; }
-
-    public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
 
     // Helper methods
@@ -115,9 +84,6 @@ public class Paste {
         return viewCount >= maxViews;
     }
 
-    public boolean isAvailable(Instant now) {
-        return isActive && !isExpired(now) && !isViewLimitExceeded();
-    }
 
     public Integer getRemainingViews() {
         if (maxViews == null) return null;
@@ -130,8 +96,4 @@ public class Paste {
         return expiresAt.toInstant().toString();
     }
 
-    // Check if paste needs to be deactivated
-    public boolean shouldDeactivate(Instant now) {
-        return !isActive || isExpired(now) || isViewLimitExceeded();
-    }
 }

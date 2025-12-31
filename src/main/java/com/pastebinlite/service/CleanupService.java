@@ -11,7 +11,7 @@ public class CleanupService {
     private PasteService pasteService;
 
     // Run every hour
-    @Scheduled(fixedRate = 3600000)
+    @Scheduled(fixedRate = 1800000)
     public void cleanupExpiredPastes() {
         pasteService.cleanupExpiredPastes();
     }

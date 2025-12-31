@@ -52,7 +52,13 @@ public class PasteService {
         Paste paste = pasteOpt.get();
 
         // Check constraints before incrementing
-        if (paste.isExpired(now) || paste.isViewLimitExceeded()) {
+        if (paste.isExpired(now)) {
+            return Optional.empty();
+        }
+
+        if (paste.isViewLimitExceeded()) {
+            paste.setActive(false);
+            pasteRepository.save(paste);
             return Optional.empty();
         }
 
@@ -109,7 +115,7 @@ public class PasteService {
             return baseUrl + "/p/" + pasteId;
         }
     }
-    // fallback (shouldn't happen in production)
+
     return "/p/" + pasteId;
 }
 
@@ -141,5 +147,9 @@ public class PasteService {
             paste.setActive(false);
             pasteRepository.save(paste);
         });
+    }
+
+    public Optional<Paste> findPasteByPasteId(String id) {
+        return pasteRepository.findByPasteId(id);
     }
 }

@@ -22,9 +22,6 @@ public class ViewController {
     @Autowired
     private PasteService pasteService;
 
-    @Autowired
-    private PasteRepository pasteRepository;
-
     @GetMapping("/")
     public String home() {
         return "index";
@@ -42,7 +39,7 @@ public class ViewController {
             Model model) {
 
         // Single database fetch
-        Optional<Paste> pasteOpt = pasteRepository.findByPasteId(id);
+        Optional<Paste> pasteOpt = pasteService.findPasteByPasteId(id);
 
         if (pasteOpt.isEmpty()) {
             model.addAttribute("errorType", "not_found");
