@@ -57,7 +57,7 @@ public class PasteService {
         }
 
         if (paste.isViewLimitExceeded()) {
-            paste.setActive(false);
+            paste.setExpiresAt(Date.from(now.minusSeconds(1)));
             pasteRepository.save(paste);
             return Optional.empty();
         }
