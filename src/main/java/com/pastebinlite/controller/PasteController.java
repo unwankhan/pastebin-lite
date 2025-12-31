@@ -2,6 +2,7 @@ package com.pastebinlite.controller;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.pastebinlite.model.Paste;
+import com.pastebinlite.model.PasteResult;
 import com.pastebinlite.service.PasteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -82,38 +83,22 @@ public class PasteController {
             @PathVariable String id,
             @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs) {
 
-        // This API should increment the view count (counts as a view)
-        Optional<Paste> pasteOpt = pasteService.getPaste(id, testNowMs);
+        PasteResult result = pasteService.getPaste(id, testNowMs);  // Call updated method.
 
-        if (pasteOpt.isEmpty()) {
-            // Try to get the paste without incrementing to check why it's unavailable
-            Optional<Paste> pasteForCheck = pasteService.getPasteForViewOnly(id, testNowMs);
+        if (result.isError()) {
+            String errorMsg = result.getErrorMessage();
+            Map<String, Object> errorBody = Map.of("error", errorMsg);  // Simple.
 
-            if (pasteForCheck.isEmpty()) {
-                // Paste doesn't exist at all
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Paste not found"));
+            if (errorMsg.contains("expired")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
+            } else if (errorMsg.contains("limit reached")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", errorMsg, "details", "View count exceeded maximum allowed."));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
             }
-
-            Paste paste = pasteForCheck.get();
-            Instant now = pasteService.getNowInstant(testNowMs);
-
-            if (paste.getExpiresAt() != null && now.isAfter(paste.getExpiresAt().toInstant())) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Paste expired"));
-            }
-
-            if (paste.getMaxViews() != null && paste.getViewCount() >= paste.getMaxViews()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Paste view limit reached"));
-            }
-
-            // Generic error if none of the above
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Paste unavailable"));
         }
 
-        Paste paste = pasteOpt.get();
+        Paste paste = result.getPaste();
         Map<String, Object> response = new HashMap<>();
         response.put("content", paste.getContent());
         response.put("remaining_views", paste.getRemainingViews());

@@ -58,11 +58,9 @@ public class Paste {
 
 
     public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt=createdAt;}
 
     public Date getExpiresAt() { return expiresAt; }
-    public  void setExpiresAt(Date expiresAt) { this.expiresAt=expiresAt; }
-
+    public void setExpiresAt(Date expiresAt) { this.expiresAt = expiresAt; }
     public void setActive(boolean active) { isActive = active; }
 
     // Helper methods

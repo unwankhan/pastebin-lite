@@ -1,6 +1,7 @@
 package com.pastebinlite.service;
 
 import com.pastebinlite.model.Paste;
+import com.pastebinlite.model.PasteResult;
 import com.pastebinlite.repository.PasteRepository;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+
+
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -40,26 +43,25 @@ public class PasteService {
         return pasteRepository.save(paste);
     }
 
-    public Optional<Paste> getPaste(String pasteId, Long testNowMs) {
+    public PasteResult getPaste(String pasteId, Long testNowMs) {
         Instant now = getNowInstant(testNowMs);
-
-        // First, check if paste exists and is available
         Optional<Paste> pasteOpt = pasteRepository.findByPasteId(pasteId);
+
         if (pasteOpt.isEmpty()) {
-            return Optional.empty();
+            return PasteResult.error("Paste not found");  // Message add.
         }
 
         Paste paste = pasteOpt.get();
 
-        // Check constraints before incrementing
         if (paste.isExpired(now)) {
-            return Optional.empty();
+            paste.setActive(false);
+            return PasteResult.error("Paste has expired");  // Specific message.
         }
 
         if (paste.isViewLimitExceeded()) {
-            paste.setExpiresAt(Date.from(now.minusSeconds(1)));
+            paste.setActive(false);
             pasteRepository.save(paste);
-            return Optional.empty();
+            return PasteResult.error("Paste view limit reached. It will be automatically deleted.");
         }
 
         // Atomic update using MongoDB's findAndModify
@@ -88,22 +90,33 @@ public class PasteService {
                 Paste.class
         );
 
-        return Optional.ofNullable(updatedPaste);
+        if (updatedPaste == null) {  // Agar update fail (rare, race).
+            return PasteResult.error("Paste became unavailable during access");
+        }
+
+        return PasteResult.success(updatedPaste);
     }
 
-    public Optional<Paste> getPasteForViewOnly(String pasteId, Long testNowMs) {
-    Optional<Paste> pasteOpt = pasteRepository.findByPasteId(pasteId);
-    if (pasteOpt.isEmpty()) return Optional.empty();
+    // Updated PasteService.java - getPasteForViewOnly method
+    public PasteResult getPasteForViewOnly(String pasteId, Long testNowMs) {
+        Optional<Paste> pasteOpt = pasteRepository.findByPasteId(pasteId);
+        if (pasteOpt.isEmpty()) {
+            return PasteResult.error("Paste not found");
+        }
 
-    Paste paste = pasteOpt.get();
-    Instant now = getNowInstant(testNowMs);
+        Paste paste = pasteOpt.get();
+        Instant now = getNowInstant(testNowMs);
 
-    if (paste.isExpired(now) || paste.isViewLimitExceeded()) {
-        return Optional.empty();
+        if (paste.isExpired(now)) {
+            return PasteResult.error("Paste has expired");
+        }
+
+        if (paste.isViewLimitExceeded()) {
+            return PasteResult.error("Paste view limit reached");
+        }
+
+        return PasteResult.success(paste);
     }
-
-    return Optional.of(paste);
-}
 
 
     public String getPasteUrl(String pasteId) {
@@ -149,7 +162,4 @@ public class PasteService {
         });
     }
 
-    public Optional<Paste> findPasteByPasteId(String id) {
-        return pasteRepository.findByPasteId(id);
-    }
 }

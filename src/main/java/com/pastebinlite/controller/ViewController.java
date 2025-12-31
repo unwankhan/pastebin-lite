@@ -1,6 +1,7 @@
 package com.pastebinlite.controller;
 
 import com.pastebinlite.model.Paste;
+import com.pastebinlite.model.PasteResult;
 import com.pastebinlite.repository.PasteRepository;
 import com.pastebinlite.service.PasteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,45 +33,40 @@ public class ViewController {
         return "create";
     }
 
+
     @GetMapping("/p/{id}")
     public String viewPasteHtml(
             @PathVariable String id,
             @RequestHeader(value = "x-test-now-ms", required = false) Long testNowMs,
             Model model) {
 
-        // Single database fetch
-        Optional<Paste> pasteOpt = pasteService.findPasteByPasteId(id);
+        // Single service call with result handling
+        PasteResult result = pasteService.getPasteForViewOnly(id, testNowMs);
 
-        if (pasteOpt.isEmpty()) {
-            model.addAttribute("errorType", "not_found");
-            model.addAttribute("errorTitle", "Paste Not Found");
-            model.addAttribute("errorMessage", "The paste you're looking for doesn't exist or has been deleted.");
-            return "error";
-        }
-
-        Paste paste = pasteOpt.get();
-        Instant now = getNowInstant(testNowMs);
-
-        // Check constraints
-        if (paste.isExpired(now)) {
-            model.addAttribute("errorType", "expired");
-            model.addAttribute("errorTitle", "Paste Expired");
-            model.addAttribute("errorMessage", "This paste has expired and is no longer available.");
-            if (paste.getExpiresAt() != null) {
-                model.addAttribute("errorDetails",
-                        "Expired on: " + DateTimeFormatter.ISO_INSTANT.format(paste.getExpiresAt().toInstant()));
+        if (result.isError()) {
+            String errorMsg = result.getErrorMessage();
+            if (errorMsg.contains("not found")) {
+                model.addAttribute("errorType", "not_found");
+                model.addAttribute("errorTitle", "Paste Not Found");
+                model.addAttribute("errorMessage", "The paste you're looking for doesn't exist or has been deleted.");
+            } else if (errorMsg.contains("expired")) {
+                model.addAttribute("errorType", "expired");
+                model.addAttribute("errorTitle", "Paste Expired");
+                model.addAttribute("errorMessage", "This paste has expired and is no longer available.");
+                // Optional: Fetch paste again for details if needed, but since error, keep simple
+                model.addAttribute("errorDetails", "The paste has reached its expiration time.");
+            } else if (errorMsg.contains("limit reached")) {
+                model.addAttribute("errorType", "limit_reached");
+                model.addAttribute("errorTitle", "View Limit Reached");
+                model.addAttribute("errorMessage", "This paste has reached its maximum view limit and is no longer available.");
+                // For details, we'd need paste object; if critical, fetch separately, but to avoid extra DB call, use generic
+                model.addAttribute("errorDetails", "The allowed number of views has been exceeded.");
             }
             return "error";
         }
 
-        if (paste.isViewLimitExceeded()) {
-            model.addAttribute("errorType", "limit_reached");
-            model.addAttribute("errorTitle", "View Limit Reached");
-            model.addAttribute("errorMessage",
-                    "This paste has been viewed " + paste.getViewCount() +
-                            " times and reached its maximum limit of " + paste.getMaxViews() + " views.");
-            return "error";
-        }
+        Paste paste = result.getPaste();
+        Instant now = getNowInstant(testNowMs);
 
         // All constraints passed, show the paste
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -99,6 +95,7 @@ public class ViewController {
 
         return "view";
     }
+
 
     @GetMapping("/error")
     public String errorPage(@RequestParam(value = "message", required = false) String message, Model model) {
